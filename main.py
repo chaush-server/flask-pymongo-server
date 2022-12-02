@@ -61,8 +61,8 @@ def check_user():
 
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
-    qr_data = '109914322445815934361|AvUkYNmXJPx/p4w8lS07VdPeDgrnoQzixyDVSAufkFYCkvTH1PeCt5MWv8q7MrafLV7yyMYJqNp2+' \
-              'uLWpMmiGPvwdARRXA72dFSTT0OE9WS+KPdEHoSVZfI3P5Pj756drXmhJQRaLNbaQcq2jAKYxKg3NGm45O9HJAuFKKihwKA='
+    qr_data = '109914322445815934361|M7Vgj5Jj2AeoxJ3uyxiAg+F/MQ2tP6sEk89+4kPr8mX6bVojlJB9SyDuu94jPrj+/tApkxbyB9R+90V8Ceh' \
+              'i150w7uL12uCbAX2b7cX4PYuavLK849ZSNf5WLnmWqw8/3OwG6uqDjzOTHo9ySg00FPhm3bJ2i7Gwr931OLLK27o='
     lecture_room = "236"
 
     google_id = qr_data[:qr_data.find("|")]
