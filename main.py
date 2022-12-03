@@ -1,5 +1,3 @@
-from crypt import methods
-
 from flask import Flask, jsonify, request, abort, make_response
 import pymongo
 import rsa
