@@ -78,9 +78,10 @@ def home_page():
 def check_user():
     # if not request.json or not request.json["qr_data"]:
     #     abort(400)
-
+    global status
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
+
     qr_data = '109914322445815934361|M7Vgj5Jj2AeoxJ3uyxiAg+F/MQ2tP6sEk89+4kPr8mX6bVojlJB9SyDuu94jPrj+/tApkxbyB9R+90V8Ceh' \
               'i150w7uL12uCbAX2b7cX4PYuavLK849ZSNf5WLnmWqw8/3OwG6uqDjzOTHo9ySg00FPhm3bJ2i7Gwr931OLLK27o='
     lecture_room = "236"
@@ -110,12 +111,13 @@ def check_user():
             print(f"Записан:\n{user['displayName']}  {check_in_time[:10]}  {check_in_time[11:]}  {lecture_room}")
         else:
             print(f"{user['displayName']} уже в списке.")
+            status = f"{user['displayName']} already in list."
     else:
         print(base64.b64decode("bWlndWVsOnB5dGhvbg==").decode())
         print("QR-код неактуален.")
-        return jsonify({'Code': dict(request.headers)})
+        status = "QR-code is not actual."
 
-    return jsonify({'Code': 'OK.'})
+    return jsonify({'Status': status})
 
 
 @app.errorhandler(404)
