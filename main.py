@@ -13,14 +13,14 @@ mongo = pymongo.MongoClient(
     "mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
-with open('scanners.json', 'r', encoding='utf-8') as f:
-    scanners_data = json.load(f)
+# with open('scanners.json', 'r', encoding='utf-8') as f:
+#     scanners_data = json.load(f)
 
 
 @auth.get_password
 def get_password(scan_login):
-    if scan_login in scanners_data["scanners"]:
-        return scanners_data["scanners"][scan_login]
+    if scan_login == "236": #in scanners_data["scanners"]:
+        return "token123" #scanners_data["scanners"][scan_login]
 
 
 # @auth.error_handler
