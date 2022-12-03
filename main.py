@@ -4,14 +4,43 @@ import rsa
 import base64
 import time
 import datetime
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 mongo = pymongo.MongoClient(
     "mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
+auth = HTTPBasicAuth()
+
+
+users = {
+    "john": generate_password_hash("hello"),
+    "susan": generate_password_hash("bye")
+}
+
+
+# @auth.verify_password
+# def verify_password(username, password):
+#     if username in users and \
+#             check_password_hash(users.get(username), password):
+#         return username
+
+
+@auth.get_password
+def get_password(username):
+    if username == 'miguel':
+        return 'python'
+
+
+# @auth.error_handler
+# def unauthorized():
+#     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
 
 @app.route("/user/add", methods=['POST'])
+@auth.login_required()
 def home_page():
     if not request.json or not 'displayName' in request.json or not 'email' in request.json \
             or not 'google_id' in request.json:
@@ -44,17 +73,8 @@ def home_page():
                     'public_key': user['public_key']})
 
 
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
-
-
-@app.errorhandler(400)
-def not_found(error):
-    return make_response(jsonify({'error': 'This is not json'}), 404)
-
-
 @app.route('/user/qr', methods=['GET', 'POST'])
+@auth.login_required
 def check_user():
     # if not request.json or not request.json["qr_data"]:
     #     abort(400)
@@ -79,7 +99,7 @@ def check_user():
 
     current_time = time.time()
     check_in_time = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-    print(current_time - decrypted_time)
+    # print(current_time - decrypted_time)
 
     if (current_time - decrypted_time) < 240:
         in_lesson_list = list(db.lesson_list.find({"email": user['email']}))
@@ -91,9 +111,21 @@ def check_user():
         else:
             print(f"{user['displayName']} уже в списке.")
     else:
-        return jsonify({'Code': "QR-code is not actual."})
+        print(base64.b64decode("bWlndWVsOnB5dGhvbg==").decode())
+        print("QR-код неактуален.")
+        return jsonify({'Code': dict(request.headers)})
 
     return jsonify({'Code': 'OK.'})
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def not_found(error):
+    return make_response(jsonify({'error': 'This is not json'}), 404)
 
 
 if __name__ == '__main__':
