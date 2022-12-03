@@ -1,3 +1,5 @@
+from crypt import methods
+
 from flask import Flask, jsonify, request, abort, make_response
 import pymongo
 import rsa
@@ -5,7 +7,7 @@ import base64
 import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
-from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 
 app = Flask(__name__)
@@ -13,25 +15,14 @@ mongo = pymongo.MongoClient(
     "mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
-
-
-users = {
-    "john": generate_password_hash("hello"),
-    "susan": generate_password_hash("bye")
-}
-
-
-# @auth.verify_password
-# def verify_password(username, password):
-#     if username in users and \
-#             check_password_hash(users.get(username), password):
-#         return username
+with open('scanners.json', 'r', encoding='utf-8') as f:
+    scanners_data = json.load(f)
 
 
 @auth.get_password
-def get_password(username):
-    if username == '236':
-        return 'token123'
+def get_password(scan_login):
+    if scan_login in scanners_data["username"]:
+        return scanners_data["username"][scan_login]
 
 
 # @auth.error_handler
@@ -78,7 +69,7 @@ def home_page():
 def check_user():
     # if not request.json or not request.json["qr_data"]:
     #     abort(400)
-    global status
+    status = "Added."
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
 
@@ -114,7 +105,6 @@ def check_user():
             status = f"{user['displayName']} already in list."
     else:
         print(base64.b64decode("bWlndWVsOnB5dGhvbg==").decode())
-        print("QR-код неактуален.")
         status = "QR-code is not actual."
 
     return jsonify({'Status': status})
@@ -128,6 +118,14 @@ def not_found(error):
 @app.errorhandler(400)
 def not_found(error):
     return make_response(jsonify({'error': 'This is not json'}), 404)
+
+
+# @app.route("/scan/add", methods=['GET', 'POST'])
+# def add_scan():
+#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
+#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
+#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
+#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
 
 
 if __name__ == '__main__':
