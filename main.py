@@ -102,7 +102,6 @@ def check_user():
             print(f"{user['displayName']} уже в списке.")
             status = f"{user['displayName']} already in list."
     else:
-        print(base64.b64decode("bWlndWVsOnB5dGhvbg==").decode())
         status = "QR-code is not actual."
 
     return jsonify({'Status': status})
