@@ -30,8 +30,8 @@ users = {
 
 @auth.get_password
 def get_password(username):
-    if username == 'miguel':
-        return 'python'
+    if username == '236':
+        return 'token123'
 
 
 # @auth.error_handler
@@ -40,14 +40,14 @@ def get_password(username):
 
 
 @app.route("/user/add", methods=['POST'])
-@auth.login_required()
+# @auth.login_required()
 def home_page():
     if not request.json or not 'displayName' in request.json or not 'email' in request.json \
             or not 'google_id' in request.json:
         abort(400)
 
-    # user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))
-    user = list(db.user.find({"email": request.json['email']}))
+    user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))
+    # user = list(db.user.find({"email": request.json['email']}))
 
     if not user:
         public_key, private_key = rsa.newkeys(1024)
