@@ -74,9 +74,9 @@ def check_user():
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
 
-    qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5' \
-              '/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w= '
-    lecture_room = "236"
+#     qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5' \
+#               '/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w= '
+#     lecture_room = "236"
 
     google_id = qr_data[:qr_data.find("|")]
     encrypted_time = qr_data[qr_data.find("|") + 1:]
