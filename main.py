@@ -67,7 +67,7 @@ def home_page():
 
 
 @app.route('/user/qr', methods=['GET', 'POST'])
-@auth.login_required
+# @auth.login_required
 def check_user():
     # if not request.json or not request.json["qr_data"]:
     #     abort(400)
