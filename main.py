@@ -7,25 +7,27 @@ import datetime
 from flask_httpauth import HTTPBasicAuth
 import json
 
-
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 mongo = pymongo.MongoClient(
     "mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
+
+
 # with open('scanners.json', 'r', encoding='utf-8') as f:
 #     scanners_data = json.load(f)
 
 
 @auth.get_password
 def get_password(scan_login):
-    if scan_login == "236": #in scanners_data["scanners"]:
-        return "token123" #scanners_data["scanners"][scan_login]
+    if scan_login == "236":  # in scanners_data["scanners"]:
+        return "token123"  # scanners_data["scanners"][scan_login]
 
 
-# @auth.error_handler
-# def unauthorized():
-#     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
+@auth.error_handler
+def unauthorized():
+    return make_response(jsonify({'error': 'Unauthorized access'}), 401)
 
 
 @app.route("/user/add", methods=['POST'])
@@ -36,7 +38,6 @@ def home_page():
         abort(400)
 
     user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))
-    # user = list(db.user.find({"email": request.json['email']}))
 
     if not user:
         public_key, private_key = rsa.newkeys(1024)
@@ -63,16 +64,14 @@ def home_page():
 
 
 @app.route('/user/qr', methods=['GET', 'POST'])
-@auth.login_required
+# @auth.login_required
 def check_user():
     # if not request.json or not request.json["qr_data"]:
     #     abort(400)
-    status = "Added."
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
 
-    qr_data = '109914322445815934361|M7Vgj5Jj2AeoxJ3uyxiAg+F/MQ2tP6sEk89+4kPr8mX6bVojlJB9SyDuu94jPrj+/tApkxbyB9R+90V8Ceh' \
-              'i150w7uL12uCbAX2b7cX4PYuavLK849ZSNf5WLnmWqw8/3OwG6uqDjzOTHo9ySg00FPhm3bJ2i7Gwr931OLLK27o='
+    qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w='
     lecture_room = "236"
 
     google_id = qr_data[:qr_data.find("|")]
@@ -88,23 +87,29 @@ def check_user():
     decrypted_time = int(decrypted_time.decode())
 
     current_time = time.time()
-    check_in_time = datetime.datetime.now().strftime("%d.%m.%Y %H:%M")
-    # print(current_time - decrypted_time)
+    # now_float = datetime.datetime.now()
+    # check_in_time = now_float.strftime("%d.%m.%Y %H:%M")
 
-    if (current_time - decrypted_time) < 240:
+    print(current_time - decrypted_time)
+    if (current_time - decrypted_time) < 24000:
+        check_in_time = datetime.datetime.now()
         in_lesson_list = list(db.lesson_list.find({"email": user['email']}))
         if not in_lesson_list:
             db.lesson_list.insert_one(
-                {"displayName": user['displayName'], "email": user['email'],
-                 "check_in_time": check_in_time, "lecture_room": lecture_room})
-            print(f"Записан:\n{user['displayName']}  {check_in_time[:10]}  {check_in_time[11:]}  {lecture_room}")
+                {"displayName": user['displayName'], "email": user['email'], "check_in_float": current_time,
+                 "check_in_time": [check_in_time], "lecture_room": lecture_room})
+            # print(f"Записан:\n{user['displayName']}  {check_in_time[:10]}  {check_in_time[11:]}  {lecture_room}")
+            status = 'Added'
+        elif in_lesson_list and ((current_time - in_lesson_list[0]['check_in_float']) > 300):
+            db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$push": {"check_in_time": check_in_time}})
+            db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$set": {"check_in_float": current_time}})
+            status = f"New check-in time - {check_in_time}"
         else:
-            print(f"{user['displayName']} уже в списке.")
             status = f"{user['displayName']} already in list."
     else:
         status = "QR-code is not actual."
 
-    return jsonify({'Status': status})
+    return jsonify({'status': status})
 
 
 @app.errorhandler(404)
@@ -123,6 +128,15 @@ def not_found(error):
 #     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
 #     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
 #     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
+
+
+@app.route("/lesson/list", methods=['GET', 'POST'])
+def lesson_list():
+    students = list(db.lesson_list.find({}, {"_id": 0, "displayName": 1, "check_in_time": 1}))
+    print(students[0]["check_in_time"])
+    return jsonify({'list': {"name": students[0]["displayName"], "check-in time": students[0]["check_in_time"]}}) #json_encode(students, JSON_UNESCAPED_UNICODE)
+
+    # db.lesson_list.find({check_in_time: {$gte: ISODate("2010-04-29T00:00:00.000Z"),$lt: ISODate("2023-05-01T00:00:00.000Z")}}, {"_id": 0, "displayName": 1, "check_in_time": 1})
 
 
 if __name__ == '__main__':
