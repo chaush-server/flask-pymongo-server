@@ -7,7 +7,6 @@ import datetime
 from flask_httpauth import HTTPBasicAuth
 
 app = Flask(__name__)
-app.config['JSON_AS_ASCII'] = False
 mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
