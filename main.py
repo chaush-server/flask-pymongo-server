@@ -1,22 +1,25 @@
-from flask import Flask, jsonify, request, abort, make_response
+from flask import Flask, jsonify, request, abort, make_response, render_template
 import pymongo
 import rsa
 import base64
 import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
-import json
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
-mongo = pymongo.MongoClient(
-    "mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
+mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
 
-
 # with open('scanners.json', 'r', encoding='utf-8') as f:
 #     scanners_data = json.load(f)
+
+
+@app.route('/')
+def lists():
+    data = list(db.lesson_list.find())
+    return render_template('base.html', data=data)
 
 
 @auth.get_password
@@ -25,6 +28,7 @@ def get_password(scan_login):
         return "token123"  # scanners_data["scanners"][scan_login]
 
 
+# Проверка на аутентификацию
 @auth.error_handler
 def unauthorized():
     return make_response(jsonify({'error': 'Unauthorized access'}), 401)
@@ -33,10 +37,9 @@ def unauthorized():
 @app.route("/user/add", methods=['POST'])
 # @auth.login_required()
 def home_page():
-    if not request.json or not 'displayName' in request.json or not 'email' in request.json \
-            or not 'google_id' in request.json:
+    if not request.json or not ('displayName' in request.json) or not ('email' in request.json) \
+            or not ('google_id' in request.json):
         abort(400)
-
     user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))
 
     if not user:
@@ -50,17 +53,17 @@ def home_page():
                  "google_id": request.json['google_id'], "public_key": public_key, "private_key": private_key})
             print(f'Create user')
             user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))[0]
-        except:
-            print(f'Error, user not create')
+        except Exception as e:
+            print(f'Error, user not create', e)
 
     else:
         user = user[0]
         print(f'Есть в БД:\n{user}')
 
-    return jsonify({'displayName': user['displayName'],
-                    'email': user['email'],
-                    'google_id': user['google_id'],
-                    'public_key': user['public_key']})
+    return jsonify({'displayName': user.get("displayName"),
+                    'email': user.get('email'),
+                    'google_id': user.get('google_id'),
+                    'public_key': user.get('public_key')})
 
 
 @app.route('/user/qr', methods=['GET', 'POST'])
@@ -71,7 +74,8 @@ def check_user():
     # qr_data = request.json["qr_data"]
     # lecture_room = request.json["lecture_room"]
 
-    qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w='
+    qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5' \
+              '/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w= '
     lecture_room = "236"
 
     google_id = qr_data[:qr_data.find("|")]
@@ -87,8 +91,6 @@ def check_user():
     decrypted_time = int(decrypted_time.decode())
 
     current_time = time.time()
-    # now_float = datetime.datetime.now()
-    # check_in_time = now_float.strftime("%d.%m.%Y %H:%M")
 
     print(current_time - decrypted_time)
     if (current_time - decrypted_time) < 24000:
@@ -98,7 +100,6 @@ def check_user():
             db.lesson_list.insert_one(
                 {"displayName": user['displayName'], "email": user['email'], "check_in_float": current_time,
                  "check_in_time": [check_in_time], "lecture_room": lecture_room})
-            # print(f"Записан:\n{user['displayName']}  {check_in_time[:10]}  {check_in_time[11:]}  {lecture_room}")
             status = 'Added'
         elif in_lesson_list and ((current_time - in_lesson_list[0]['check_in_float']) > 300):
             db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$push": {"check_in_time": check_in_time}})
@@ -114,29 +115,23 @@ def check_user():
 
 @app.errorhandler(404)
 def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
+    return make_response(jsonify(error=str(error)))
 
 
 @app.errorhandler(400)
 def not_found(error):
-    return make_response(jsonify({'error': 'This is not json'}), 404)
-
-
-# @app.route("/scan/add", methods=['GET', 'POST'])
-# def add_scan():
-#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
-#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
-#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
-#     # КОД С ДОБАВЛЕНИЕМ АККАУНТА СКАННЕРА В МОНГО
+    return make_response(jsonify(error=str(error)))
 
 
 @app.route("/lesson/list", methods=['GET', 'POST'])
 def lesson_list():
     students = list(db.lesson_list.find({}, {"_id": 0, "displayName": 1, "check_in_time": 1}))
     print(students[0]["check_in_time"])
-    return jsonify({'list': {"name": students[0]["displayName"], "check-in time": students[0]["check_in_time"]}}) #json_encode(students, JSON_UNESCAPED_UNICODE)
+    return jsonify({'list': {"name": students[0]["displayName"], "check-in time": students[0][
+        "check_in_time"]}})  # json_encode(students, JSON_UNESCAPED_UNICODE)
 
-    # db.lesson_list.find({check_in_time: {$gte: ISODate("2010-04-29T00:00:00.000Z"),$lt: ISODate("2023-05-01T00:00:00.000Z")}}, {"_id": 0, "displayName": 1, "check_in_time": 1})
+    # db.lesson_list.find({check_in_time: {$gte: ISODate("2010-04-29T00:00:00.000Z"),$lt: ISODate(
+    # "2023-05-01T00:00:00.000Z")}}, {"_id": 0, "displayName": 1, "check_in_time": 1})
 
 
 if __name__ == '__main__':
