@@ -100,7 +100,7 @@ def check_user():
                 {"displayName": user['displayName'], "email": user['email'], "check_in_float": current_time,
                  "check_in_time": [check_in_time], "lecture_room": lecture_room})
             status = 'Added'
-        elif in_lesson_list and ((current_time - in_lesson_list[0]['check_in_float']) > 300):
+        elif in_lesson_list and ((current_time - in_lesson_list[0]['check_in_float']) > 30):
             db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$push": {"check_in_time": check_in_time}})
             db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$set": {"check_in_float": current_time}})
             status = f"New check-in time - {check_in_time}"
