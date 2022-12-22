@@ -92,7 +92,7 @@ def check_user():
     current_time = time.time()
 
     print(current_time - decrypted_time)
-    if (current_time - decrypted_time) < 24000:
+    if (current_time - decrypted_time) < 24:
         check_in_time = datetime.datetime.now()
         in_lesson_list = list(db.lesson_list.find({"email": user['email']}))
         if not in_lesson_list:
