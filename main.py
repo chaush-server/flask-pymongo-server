@@ -6,13 +6,28 @@ import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
 
+
 app = Flask(__name__)
 mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
 
-# with open('scanners.json', 'r', encoding='utf-8') as f:
-#     scanners_data = json.load(f)
+
+@auth.get_password
+def get_password(scan_login: str):
+    """Тут задаються возможные кабинеты и пароль к ним"""
+    if scan_login in ('236', '239', '238', '233'):
+        return "cepu!scanner!secret"
+    # При интеграции с окружением использовать следующий код:
+    # if scan_login in os.environ.get('CABINETS'):
+    #     return os.environ.get('PASS')
+
+
+@app.route('/log')
+@auth.login_required()
+def login():
+
+    return jsonify({'status': 1})
 
 
 @app.route('/')
@@ -21,21 +36,12 @@ def lists():
     return render_template('base.html', data=data)
 
 
-@auth.get_password
-def get_password(scan_login):
-    if scan_login == "236":  # in scanners_data["scanners"]:
-        return "token123"  # scanners_data["scanners"][scan_login]
-
-
-# Проверка на аутентификацию
-@auth.error_handler
-def unauthorized():
-    return make_response(jsonify({'error': 'Unauthorized access'}), 401)
-
-
 @app.route("/user/add", methods=['POST'])
-# @auth.login_required()
 def home_page():
+    """
+    Эта функция испльзуеться в qr учеников для регистрации или авторизации login
+    required не нужен
+    """
     if not request.json or not ('displayName' in request.json) or not ('email' in request.json) \
             or not ('google_id' in request.json):
         abort(400)
@@ -66,15 +72,10 @@ def home_page():
 
 
 @app.route('/user/qr', methods=['GET', 'POST'])
-# @auth.login_required
+@auth.login_required
 def check_user():
-    # if not request.json or not request.json["qr_data"]:
-    #     abort(400)
+    """Функция для записи присутствия ученика"""
     qr_data = request.json["qr_data"]
-#     lecture_room = request.json["lecture_room"]
-
-#     qr_data = '116462809506393602287|gEV5OY/WwHBkfXDPUR0c/vATo23x+Sp4ngzEsaQNQcsh5/MhEKZ7AOq7KmeQ+lg+FDFrwj5' \
-#               '/07nUl26zxJ8SEypUwfomBxDsC6VTQ1uEJKqhD2yyQ67lPOvGttf14R3UT5KMQpAXm5XojI/WsW9YDWDsSCBKB8cryOH7EEWYm8w= '
     lecture_room = "236"
 
     google_id = qr_data[:qr_data.find("|")]
@@ -112,6 +113,20 @@ def check_user():
     return jsonify({'status': status})
 
 
+@app.route("/lesson/list", methods=['GET', 'POST'])
+def lesson_list():
+    """Тестовая функция для вывода всех входов"""
+    students = list(db.lesson_list.find({}, {"_id": 0, "displayName": 1, "check_in_time": 1}))
+    print(students[0]["check_in_time"])
+    return jsonify({'list': {"name": students[0]["displayName"], "check-in time": students[0][
+        "check_in_time"]}})
+
+
+@auth.error_handler
+def unauthorized():
+    return make_response(jsonify({'error': 'Unauthorized access'}), 401)
+
+
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify(error=str(error)))
@@ -120,17 +135,6 @@ def not_found(error):
 @app.errorhandler(400)
 def not_found(error):
     return make_response(jsonify(error=str(error)))
-
-
-@app.route("/lesson/list", methods=['GET', 'POST'])
-def lesson_list():
-    students = list(db.lesson_list.find({}, {"_id": 0, "displayName": 1, "check_in_time": 1}))
-    print(students[0]["check_in_time"])
-    return jsonify({'list': {"name": students[0]["displayName"], "check-in time": students[0][
-        "check_in_time"]}})  # json_encode(students, JSON_UNESCAPED_UNICODE)
-
-    # db.lesson_list.find({check_in_time: {$gte: ISODate("2010-04-29T00:00:00.000Z"),$lt: ISODate(
-    # "2023-05-01T00:00:00.000Z")}}, {"_id": 0, "displayName": 1, "check_in_time": 1})
 
 
 if __name__ == '__main__':
