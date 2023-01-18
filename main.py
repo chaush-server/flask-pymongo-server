@@ -5,9 +5,9 @@ import base64
 import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
-import locale
+# import locale
 
-locale.setlocale(locale.LC_ALL, '')
+# locale.setlocale(locale.LC_ALL, '')
 app = Flask(__name__, template_folder='templates')
 mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
