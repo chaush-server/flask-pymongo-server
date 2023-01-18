@@ -6,8 +6,7 @@ import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
 
-
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
@@ -26,14 +25,13 @@ def get_password(scan_login: str):
 @app.route('/log')
 @auth.login_required()
 def login():
-
     return jsonify({'status': 1})
 
 
 @app.route('/')
 def lists():
     data = list(db.lesson_list.find())
-    return render_template('base.html', data=data)
+    return render_template('index.html', data=data)
 
 
 @app.route("/user/add", methods=['POST'])
