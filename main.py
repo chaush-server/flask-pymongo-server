@@ -5,10 +5,11 @@ import base64
 import time
 import datetime
 from flask_httpauth import HTTPBasicAuth
+import locale
 
-
-app = Flask(__name__)
-mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
+locale.setlocale(locale.LC_ALL, '')
+app = Flask(__name__, template_folder='templates')
+mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.mippbzs.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
 
@@ -26,14 +27,23 @@ def get_password(scan_login: str):
 @app.route('/log')
 @auth.login_required()
 def login():
-
     return jsonify({'status': 1})
 
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def lists():
-    data = list(db.lesson_list.find())
-    return render_template('base.html', data=data)
+    data = list()
+    sorting = dict()
+    lessons = ['8:00', '9:40', '11:30', '13:10', '14:50', '16:30', '18:10']
+    # Проверка на аргументы и передача на страницу
+    if request.args.get('date') and request.args.get('time') and request.args.get('lecture_room'):
+        date_form = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d")
+        date_dict = datetime.datetime.strftime(date_form, '%B, %d').replace('0', ' ')
+        sorting = {'date_form': request.args.get('date'), 'date': date_dict, 'time': request.args.get('time'),
+                   'lecture_room': request.args.get('lecture_room')}
+        data = list(db.lesson_list.find().sort("last_name"))
+    print(data)
+    return render_template('index.html', lessons=lessons, data=data, sorting=sorting)
 
 
 @app.route("/user/add", methods=['POST'])
@@ -54,8 +64,11 @@ def home_page():
 
         try:
             db.user.insert_one(
-                {"displayName": request.json['displayName'], "email": request.json['email'],
-                 "google_id": request.json['google_id'], "public_key": public_key, "private_key": private_key})
+                {"last_name": request.json['displayName'].split()[-1],
+                 "first_name": request.json['displayName'].split()[0],
+                 "email": request.json['email'], "google_id": request.json['google_id'], "public_key": public_key,
+                 "private_key": private_key,
+                 "displayName": request.json['displayName']})
             print(f'Create user')
             user = list(db.user.find({"email": request.json['email']}, {'private_key': 0}))[0]
         except Exception as e:
@@ -93,13 +106,13 @@ def check_user():
     current_time = time.time()
 
     print(current_time - decrypted_time)
-    if (current_time - decrypted_time) < 24:
+    if (current_time - decrypted_time) < 35:
         check_in_time = datetime.datetime.now()
         in_lesson_list = list(db.lesson_list.find({"email": user['email']}))
         if not in_lesson_list:
             db.lesson_list.insert_one(
-                {"displayName": user['displayName'], "email": user['email'], "check_in_float": current_time,
-                 "check_in_time": [check_in_time], "lecture_room": lecture_room})
+                {"last_name": user['last_name'], "first_name": user['first_name'], "email": user['email'],
+                 "check_in_float": current_time, "check_in_time": [check_in_time], "lecture_room": lecture_room})
             status = 'Added'
         elif in_lesson_list and ((current_time - in_lesson_list[0]['check_in_float']) > 30):
             db.lesson_list.update_one({'_id': in_lesson_list[0]['_id']}, {"$push": {"check_in_time": check_in_time}})
