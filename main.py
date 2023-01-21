@@ -9,7 +9,7 @@ from flask_httpauth import HTTPBasicAuth
 
 # locale.setlocale(locale.LC_ALL, '')
 app = Flask(__name__, template_folder='templates')
-mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.snbeycr.mongodb.net/?retryWrites=true&w=majority")
+mongo = pymongo.MongoClient("mongodb+srv://MAERZ:maerz@maerz.mippbzs.mongodb.net/?retryWrites=true&w=majority")
 db = mongo.cepu_qr
 auth = HTTPBasicAuth()
 
@@ -32,19 +32,19 @@ def login():
 
 @app.route('/', methods=['GET'])
 def lists():
-    data = list()
-    sorting = dict()
-    lessons = ['8:00', '9:40', '11:30', '13:10', '14:50', '16:30', '18:10']
-    # Проверка на аргументы и передача на страницу
-    if request.args.get('date') and request.args.get('time') and request.args.get('lecture_room'):
-        date_form = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d")
-        date_dict = datetime.datetime.strftime(date_form, '%B, %d').replace('0', ' ')
-        sorting = {'date_form': request.args.get('date'), 'date': date_dict, 'time': request.args.get('time'),
-                   'lecture_room': request.args.get('lecture_room')}
-        data = list(db.lesson_list.find().sort("last_name"))
-    print(data)
-    return render_template('index.html', lessons=lessons, data=data, sorting=sorting)
-
+    # data = list()
+    # sorting = dict()
+    # lessons = ['8:00', '9:40', '11:30', '13:10', '14:50', '16:30', '18:10']
+    # # Проверка на аргументы и передача на страницу
+    # if request.args.get('date') and request.args.get('time') and request.args.get('lecture_room'):
+    #     date_form = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d")
+    #     date_dict = datetime.datetime.strftime(date_form, '%B, %d').replace('0', ' ')
+    #     sorting = {'date_form': request.args.get('date'), 'date': date_dict, 'time': request.args.get('time'),
+    #                'lecture_room': request.args.get('lecture_room')}
+    #     data = list(db.lesson_list.find().sort("last_name"))
+    # print(data)
+    # return render_template('index.html', lessons=lessons, data=data, sorting=sorting)
+    return render_template('index.html')
 
 @app.route("/user/add", methods=['POST'])
 def home_page():
